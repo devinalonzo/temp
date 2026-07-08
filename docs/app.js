@@ -493,6 +493,15 @@ function initTimerButtons() {
   for (const id of ["f-travelstart", "f-onsitestart", "f-offsiteend", "f-homestart", "f-homeend"])
     $(id).addEventListener("change", () => { syncAutoRows(); updateTimerButtons(); });
 
+  // 1-way miles -> Mileage labor row
+  $("f-miles").addEventListener("change", () => {
+    const miles = +$("f-miles").value || 0;
+    let tr = document.querySelector('#labor-table tr.labor-row[data-auto="mileage"]');
+    if (!miles && !tr) return;
+    if (!tr) tr = addLaborLine("Mileage", miles, "mileage");
+    else setRowGross(tr, miles);
+  });
+
   $("btn-travel-start").addEventListener("click", () => {
     $("f-travelstart").value = nowHHMM();
     syncAutoRows();
@@ -606,6 +615,7 @@ function collectForm() {
     offsiteEnd: $("f-offsiteend").value,
     homeStart: $("f-homestart").value,
     homeEnd: $("f-homeend").value,
+    miles: $("f-miles").value,
     reason: $("f-reason").value,
     site: {
       name: $("f-sitename").value, address: $("f-siteaddress").value,
@@ -639,6 +649,7 @@ function restoreForm(wo) {
   $("f-offsiteend").value = wo.offsiteEnd || "";
   $("f-homestart").value = wo.homeStart || "";
   $("f-homeend").value = wo.homeEnd || "";
+  $("f-miles").value = wo.miles || "";
   updateTimerButtons();
   $("f-reason").value = wo.reason || "";
   if (wo.site) {
@@ -944,6 +955,8 @@ $("history-list").addEventListener("click", async (e) => {
     $("f-travelstart").value = $("f-onsitestart").value = $("f-offsiteend").value = "";
     $("f-homestart").value = $("f-homeend").value = "";
     updateTimerButtons();
+    // same site, same drive — recreate the Mileage row from the kept miles value
+    $("f-miles").dispatchEvent(new Event("change", { bubbles: true }));
     document.querySelectorAll("#labor-table tbody tr.labor-row").forEach((tr) => {
       tr.querySelectorAll("input, select").forEach((el) => {
         if (el.type === "checkbox") el.checked = false;
