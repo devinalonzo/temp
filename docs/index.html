@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Work Order</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#128295;</text></svg>">
+</head>
+<body>
+
+<!-- ===== Unlock screen ===== -->
+<div id="lock-screen" class="lock">
+  <div class="lock-card">
+    <h1>Work Order</h1>
+    <p>Enter the passcode to unlock.</p>
+    <form id="unlock-form">
+      <input type="password" id="passcode" placeholder="Passcode" autocomplete="current-password" autofocus>
+      <button type="submit" id="unlock-btn">Unlock</button>
+    </form>
+    <p id="lock-status" class="lock-status"></p>
+  </div>
+</div>
+
+<!-- ===== Main app ===== -->
+<div id="app" hidden>
+  <header class="topbar">
+    Work Order
+    <span id="data-info" class="data-info"></span>
+    <button type="button" id="lock-btn" class="lock-btn" title="Forget passcode on this device">🔒 Lock</button>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="wo">New Work Order</button>
+    <button class="tab" data-tab="notes">Work Notes</button>
+    <button class="tab" data-tab="history">History</button>
+  </nav>
+
+  <!-- ===== New Work Order ===== -->
+  <section id="tab-wo" class="tab-panel">
+    <form id="wo-form" autocomplete="off">
+
+      <fieldset>
+        <legend>Customer</legend>
+        <div class="grid2">
+          <label>Customer search
+            <div class="ac-wrap">
+              <input type="text" id="cust-search" placeholder="Type name or ID…">
+              <div id="cust-list" class="ac-list" hidden></div>
+            </div>
+          </label>
+          <label>Site / Location
+            <div class="ac-wrap">
+              <input type="text" id="site-search" placeholder="— pick customer first —" disabled>
+              <div id="site-list" class="ac-list" hidden></div>
+            </div>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Timer</legend>
+        <div class="timer-buttons">
+          <button type="button" class="timer-btn" id="btn-travel-start">🚗 Travel Start</button>
+          <button type="button" class="timer-btn" id="btn-travel-end">📍 Travel End / Arrived</button>
+          <button type="button" class="timer-btn" id="btn-job-start">▶ Job Start</button>
+          <button type="button" class="timer-btn" id="btn-job-end">⏹ Job End</button>
+        </div>
+        <p class="hint">Travel End records arrival and adds the travel minutes to Labor.
+        Job Start is for jobs with no travel (e.g. a second WO at the same site).
+        Job End fills Off-Site End and adds the on-site labor minutes.</p>
+        <div class="grid3">
+          <label>Travel Start
+            <span class="pair"><input type="time" id="f-travelstart"><button type="button" class="now-btn" data-now="f-travelstart">NOW</button></span>
+          </label>
+          <label>On-Site Start
+            <span class="pair"><input type="time" id="f-onsitestart"><button type="button" class="now-btn" data-now="f-onsitestart">NOW</button></span>
+          </label>
+          <label>Off-Site End
+            <span class="pair"><input type="time" id="f-offsiteend"><button type="button" class="now-btn" data-now="f-offsiteend">NOW</button></span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Header</legend>
+        <div class="grid3">
+          <label>Work Order Date <input type="date" id="f-date"></label>
+          <label>Technician <input type="text" id="f-tech"></label>
+          <label>Work Order # <input type="text" id="f-wonum"></label>
+          <label>Customer PO # <input type="text" id="f-po"></label>
+          <label>Call Type
+            <select id="f-calltype">
+              <option value=""></option>
+              <option>P0</option>
+              <option>P1</option>
+              <option>P2</option>
+              <option>P3</option>
+              <option>P4</option>
+              <option>P5</option>
+            </select>
+          </label>
+          <label>Agreement <input type="text" id="f-agreement"></label>
+        </div>
+        <label>Reason for Call <textarea id="f-reason" rows="2"></textarea></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Site</legend>
+        <div class="grid2">
+          <label>Name <input type="text" id="f-sitename"></label>
+          <label>Address <input type="text" id="f-siteaddress"></label>
+          <label>City <input type="text" id="f-sitecity"></label>
+          <label class="statezip">
+            <span>State / Zip</span>
+            <span class="pair"><input type="text" id="f-sitestate" placeholder="State"><input type="text" id="f-sitezip" placeholder="Zip"></span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Work Performed / Recommendations</legend>
+        <textarea id="f-worknotes" rows="6"></textarea>
+        <button type="button" class="linkish" id="show-recent-notes">View recent notes for this customer ▸</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Labor / Travel <span class="hint">(Qty in minutes · max 5 rows on PDF)</span></legend>
+        <div class="table-scroll">
+          <table id="labor-table">
+            <thead><tr><th>Date</th><th>Technician</th><th>Qty (min)</th><th>Type</th><th>Serial No.</th><th>Model No.</th><th>Equip. Type</th><th>Break?</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Parts / Materials / Misc. <span class="hint">(max 8 rows on PDF)</span></legend>
+        <div class="table-scroll">
+          <table id="parts-table">
+            <thead><tr><th>Date</th><th>Description</th><th>Qty</th><th>Part No.</th><th>Serial No.</th><th>Equip. Type</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Follow-up</legend>
+        <div class="grid3">
+          <label>Return Trip Needed
+            <select id="f-returntrip"><option value=""></option><option>Yes</option><option>No</option></select>
+          </label>
+          <label>Support Tech Onsite
+            <select id="f-supporttech"><option value=""></option><option>Yes</option><option>No</option></select>
+          </label>
+          <label>Warranty
+            <select id="f-warranty"><option value=""></option><option>Yes</option><option>No</option></select>
+          </label>
+        </div>
+        <label>Billing / Return Trip Notes (page 2) <textarea id="f-billingnotes" rows="3"></textarea></label>
+        <p class="hint">Return trip later? Generate this WO, then History tab → “Start return trip” reloads
+        the same customer, site and header on a fresh form.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Sign-off</legend>
+        <label>Supporting Tech (if someone assisted) <input type="text" id="f-authorizedby"></label>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit" class="primary" id="generate-btn">Generate PDF &amp; Save</button>
+        <button type="button" id="clear-form-btn">Clear Form</button>
+      </div>
+      <p id="wo-status" class="status"></p>
+    </form>
+  </section>
+
+  <!-- ===== Work Notes ===== -->
+  <section id="tab-notes" class="tab-panel" hidden>
+    <div class="grid2">
+      <label>Customer
+        <div class="ac-wrap">
+          <input type="text" id="notes-cust-search" placeholder="Type name or ID…">
+          <div id="notes-cust-list" class="ac-list" hidden></div>
+        </div>
+      </label>
+      <label>Site filter
+        <select id="notes-site-select"><option value="">All sites</option></select>
+      </label>
+    </div>
+    <p id="notes-summary" class="hint"></p>
+    <div id="notes-list"></div>
+  </section>
+
+  <!-- ===== History ===== -->
+  <section id="tab-history" class="tab-panel" hidden>
+    <p class="hint">Work orders saved on this device. The emailed PDF is the official copy.</p>
+    <div class="actions">
+      <button type="button" id="export-json">Export all as JSON</button>
+    </div>
+    <div id="history-list"></div>
+  </section>
+</div>
+
+<script src="vendor/pako.min.js"></script>
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
