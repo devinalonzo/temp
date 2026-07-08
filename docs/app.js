@@ -805,8 +805,20 @@ async function generatePdf(wo) {
   return doc.save();
 }
 
-function safeName(s) {
-  return (s || "unknown").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_").slice(0, 40);
+function fileSafe(s) {
+  return String(s || "").replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
+}
+
+// CustomerName Location-Address CustomerPO# MM-DD-YYYY.pdf
+function woFilename(wo) {
+  const [y, m, d] = (wo.date || todayIso()).split("-");
+  const parts = [
+    fileSafe(wo.customerName).slice(0, 50),
+    fileSafe(wo.site.address).slice(0, 50),
+    fileSafe(wo.po).slice(0, 25),
+    `${m}-${d}-${y}`,
+  ].filter(Boolean);
+  return parts.join(" ") + ".pdf";
 }
 
 $("wo-form").addEventListener("submit", async (e) => {
@@ -819,7 +831,7 @@ $("wo-form").addEventListener("submit", async (e) => {
   try {
     const wo = collectForm();
     const pdfBytes = await generatePdf(wo);
-    const filename = `WO_${safeName(wo.customerName)}_${wo.date || "nodate"}${wo.tech ? "_" + safeName(wo.tech) : ""}.pdf`;
+    const filename = woFilename(wo);
 
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
     const a = document.createElement("a");
