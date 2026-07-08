@@ -448,6 +448,7 @@ function syncAutoRows() {
   const defs = [
     { kind: "travel", type: "Travel to Site", start: $("f-travelstart").value, end: $("f-onsitestart").value },
     { kind: "onsite", type: "Onsite Labor", start: $("f-onsitestart").value, end: $("f-offsiteend").value },
+    { kind: "toshop", type: "Travel to Shop", start: $("f-homestart").value, end: $("f-homeend").value },
   ];
   const result = {};
   for (const d of defs) {
@@ -467,20 +468,35 @@ function flashStatus(msg) {
   s.textContent = msg;
 }
 
+/* Show only the buttons that make sense for the current state:
+   each Start hides once its time is set and the matching End appears. */
+function updateTimerButtons() {
+  const travel = $("f-travelstart").value, arrived = $("f-onsitestart").value;
+  const jobEnd = $("f-offsiteend").value, home = $("f-homestart").value, homeEnd = $("f-homeend").value;
+  $("btn-travel-start").hidden = !!travel || !!arrived;
+  $("btn-travel-end").hidden = !travel || !!arrived;
+  $("btn-job-start").hidden = !!arrived;
+  $("btn-job-end").hidden = !arrived || !!jobEnd;
+  $("btn-home-start").hidden = !jobEnd || !!home;
+  $("btn-home-end").hidden = !home || !!homeEnd;
+}
+
 function initTimerButtons() {
   document.querySelectorAll(".now-btn").forEach((b) =>
     b.addEventListener("click", () => {
       $(b.dataset.now).value = nowHHMM();
       syncAutoRows();
+      updateTimerButtons();
     }));
 
   // manual edits to the header times recompute the auto labor rows
-  for (const id of ["f-travelstart", "f-onsitestart", "f-offsiteend"])
-    $(id).addEventListener("change", syncAutoRows);
+  for (const id of ["f-travelstart", "f-onsitestart", "f-offsiteend", "f-homestart", "f-homeend"])
+    $(id).addEventListener("change", () => { syncAutoRows(); updateTimerButtons(); });
 
   $("btn-travel-start").addEventListener("click", () => {
     $("f-travelstart").value = nowHHMM();
     syncAutoRows();
+    updateTimerButtons();
     flashStatus("Travel started " + nowHHMM());
   });
 
@@ -488,6 +504,7 @@ function initTimerButtons() {
     const now = nowHHMM();
     $("f-onsitestart").value = now;
     const mins = syncAutoRows().travel;
+    updateTimerButtons();
     flashStatus(mins !== undefined
       ? `Arrived ${now} — ${mins} min travel in Labor. Job clock running.`
       : `Arrived ${now} — no Travel Start set, job clock running.`);
@@ -497,6 +514,7 @@ function initTimerButtons() {
     const now = nowHHMM();
     $("f-onsitestart").value = now;
     syncAutoRows();
+    updateTimerButtons();
     flashStatus("Job started " + now);
   });
 
@@ -504,9 +522,27 @@ function initTimerButtons() {
     const now = nowHHMM();
     $("f-offsiteend").value = now;
     const mins = syncAutoRows().onsite;
+    updateTimerButtons();
     flashStatus(mins !== undefined
       ? `Job ended ${now} — ${mins} min labor in Labor. Check the row's Break box if you took lunch.`
       : `Job ended ${now} — no start time set, add labor minutes manually.`);
+  });
+
+  $("btn-home-start").addEventListener("click", () => {
+    $("f-homestart").value = nowHHMM();
+    syncAutoRows();
+    updateTimerButtons();
+    flashStatus("Travel home started " + nowHHMM());
+  });
+
+  $("btn-home-end").addEventListener("click", () => {
+    const now = nowHHMM();
+    $("f-homeend").value = now;
+    const mins = syncAutoRows().toshop;
+    updateTimerButtons();
+    flashStatus(mins !== undefined
+      ? `Travel home ended ${now} — ${mins} min Travel to Shop in Labor.`
+      : `Travel home ended ${now}.`);
   });
 }
 
@@ -534,6 +570,7 @@ function initForm() {
     localStorage.setItem("kwoTech", $("f-tech").value.trim());
   });
   applyDefaults();
+  updateTimerButtons();
 }
 
 /* ================= collect / restore form state ================= */
@@ -567,6 +604,8 @@ function collectForm() {
     travelStart: $("f-travelstart").value,
     onsiteStart: $("f-onsitestart").value,
     offsiteEnd: $("f-offsiteend").value,
+    homeStart: $("f-homestart").value,
+    homeEnd: $("f-homeend").value,
     reason: $("f-reason").value,
     site: {
       name: $("f-sitename").value, address: $("f-siteaddress").value,
@@ -598,6 +637,9 @@ function restoreForm(wo) {
   $("f-travelstart").value = wo.travelStart || "";
   $("f-onsitestart").value = wo.onsiteStart || "";
   $("f-offsiteend").value = wo.offsiteEnd || "";
+  $("f-homestart").value = wo.homeStart || "";
+  $("f-homeend").value = wo.homeEnd || "";
+  updateTimerButtons();
   $("f-reason").value = wo.reason || "";
   if (wo.site) {
     $("f-sitename").value = wo.site.name || "";
@@ -644,6 +686,7 @@ function clearForm() {
     delete tr.dataset.auto;
   });
   applyDefaults();
+  updateTimerButtons();
   $("wo-status").textContent = "";
   $("wo-status").className = "status";
 }
@@ -887,6 +930,8 @@ $("history-list").addEventListener("click", async (e) => {
     $("f-worknotes").value = "";
     $("f-reason").value = "Return trip: " + (rec.wo.reason || "");
     $("f-travelstart").value = $("f-onsitestart").value = $("f-offsiteend").value = "";
+    $("f-homestart").value = $("f-homeend").value = "";
+    updateTimerButtons();
     document.querySelectorAll("#labor-table tbody tr.labor-row").forEach((tr) => {
       tr.querySelectorAll("input, select").forEach((el) => {
         if (el.type === "checkbox") el.checked = false;

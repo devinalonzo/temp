@@ -63,13 +63,15 @@
         <legend>Timer</legend>
         <div class="timer-buttons">
           <button type="button" class="timer-btn" id="btn-travel-start">🚗 Travel Start</button>
-          <button type="button" class="timer-btn" id="btn-travel-end">📍 Travel End / Arrived</button>
+          <button type="button" class="timer-btn" id="btn-travel-end" hidden>📍 Travel End / Arrived</button>
           <button type="button" class="timer-btn" id="btn-job-start">▶ Job Start</button>
-          <button type="button" class="timer-btn" id="btn-job-end">⏹ Job End</button>
+          <button type="button" class="timer-btn" id="btn-job-end" hidden>⏹ Job End</button>
+          <button type="button" class="timer-btn" id="btn-home-start" hidden>🏠 Travel Home Start</button>
+          <button type="button" class="timer-btn" id="btn-home-end" hidden>🏁 Travel Home End</button>
         </div>
         <p class="hint">Travel End records arrival and adds the travel minutes to Labor.
         Job Start is for jobs with no travel (e.g. a second WO at the same site).
-        Job End fills Off-Site End and adds the on-site labor minutes.</p>
+        Job End fills Off-Site End and adds the on-site labor minutes; Travel Home adds a Travel to Shop line.</p>
         <div class="grid3">
           <label>Travel Start
             <span class="pair"><input type="time" id="f-travelstart"><button type="button" class="now-btn" data-now="f-travelstart">NOW</button></span>
@@ -79,6 +81,12 @@
           </label>
           <label>Off-Site End
             <span class="pair"><input type="time" id="f-offsiteend"><button type="button" class="now-btn" data-now="f-offsiteend">NOW</button></span>
+          </label>
+          <label>Travel Home Start
+            <span class="pair"><input type="time" id="f-homestart"><button type="button" class="now-btn" data-now="f-homestart">NOW</button></span>
+          </label>
+          <label>Travel Home End
+            <span class="pair"><input type="time" id="f-homeend"><button type="button" class="now-btn" data-now="f-homeend">NOW</button></span>
           </label>
         </div>
       </fieldset>
