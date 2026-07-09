@@ -479,6 +479,8 @@ function updateTimerButtons() {
   $("btn-job-end").hidden = !arrived || !!jobEnd;
   $("btn-home-start").hidden = !jobEnd || !!home;
   $("btn-home-end").hidden = !home || !!homeEnd;
+  // miles question appears once travel has ended (or a saved value exists)
+  $("miles-label").hidden = !((travel && arrived) || $("f-miles").value);
 }
 
 function initTimerButtons() {
