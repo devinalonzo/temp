@@ -781,6 +781,16 @@ async function generatePdf(wo) {
   try { form.getTextField("Worknotes").setFontSize(9); } catch {}
   setText(form, "Worknotes", wo.worknotes);
 
+  // The template ships with example values in the labor Type column
+  // (Repair11..41); clear them so unused rows come out blank.
+  for (let i = 1; i <= LABOR_ROWS; i++) {
+    try {
+      const f = form.getTextField(`Repair${i}1`);
+      f.disableReadOnly();
+      f.setText("");
+    } catch {}
+  }
+
   let n = 0;
   for (const row of wo.labor) {
     if (!laborRowHasContent(row) || n >= LABOR_ROWS) continue;
