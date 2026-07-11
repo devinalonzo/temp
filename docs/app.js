@@ -582,6 +582,52 @@ function initForm() {
   });
   applyDefaults();
   updateTimerButtons();
+  restoreDraft();
+  // click catches the timer/NOW buttons, which set values programmatically
+  for (const evt of ["input", "change", "click"])
+    $("wo-form").addEventListener(evt, saveDraft);
+}
+
+/* ----- draft autosave -----
+   Every edit snapshots the whole form to localStorage (debounced) so a
+   reload, tab kill or timeout doesn't lose in-progress work. The draft is
+   dropped once the PDF is generated & saved, or when the form is cleared. */
+
+const DRAFT_KEY = "kwoDraft";
+let draftTimer = null;
+
+function draftHasContent(wo) {
+  return [wo.customerId, wo.wonum, wo.po, wo.reason, wo.worknotes,
+    wo.travelStart, wo.onsiteStart, wo.offsiteEnd, wo.miles,
+    wo.site.name, wo.billingNotes, wo.authorizedBy].some(Boolean) ||
+    wo.labor.some(laborRowHasContent) || wo.parts.some(partsRowHasContent);
+}
+
+function saveDraft() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => {
+    try {
+      const wo = collectForm();
+      if (draftHasContent(wo))
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ wo, editingHistoryId }));
+      else localStorage.removeItem(DRAFT_KEY);
+    } catch { /* storage full/unavailable — draft is best-effort */ }
+  }, 400);
+}
+
+function discardDraft() {
+  clearTimeout(draftTimer);
+  draftTimer = null;
+  localStorage.removeItem(DRAFT_KEY);
+}
+
+function restoreDraft() {
+  let draft = null;
+  try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY)); } catch {}
+  if (!draft?.wo) return;
+  restoreForm(draft.wo);
+  editingHistoryId = draft.editingHistoryId ?? null;
+  flashStatus("Unsaved draft restored.");
 }
 
 /* ================= collect / restore form state ================= */
@@ -705,7 +751,7 @@ function clearForm() {
 }
 
 $("clear-form-btn").addEventListener("click", () => {
-  if (confirm("Clear the entire form?")) clearForm();
+  if (confirm("Clear the entire form?")) { clearForm(); discardDraft(); }
 });
 
 // Enter must never submit the form (generate the PDF) from a field —
@@ -864,6 +910,7 @@ $("wo-form").addEventListener("submit", async (e) => {
     setTimeout(() => URL.revokeObjectURL(a.href), 30000);
 
     await saveWorkOrder(wo, filename);
+    discardDraft();
     status.className = "status ok";
     status.textContent = `Saved & downloaded ${filename}. Attach it to an email to the office.` +
       (wo.returnTrip === "Yes" ? " Return trip: use History → Start return trip when you go back." : "");
@@ -986,6 +1033,7 @@ $("history-list").addEventListener("click", async (e) => {
     $("f-authorizedby").value = "";
     flashStatus("Return trip loaded — customer, site and reason carried over. Hit Travel Start when you leave.");
   }
+  saveDraft(); // history load counts as in-progress work — survive a reload too
   document.querySelector('.tab[data-tab="wo"]').click();
   window.scrollTo(0, 0);
 });
