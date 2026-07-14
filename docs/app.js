@@ -882,6 +882,7 @@ function fileSafe(s) {
 function woFilename(wo) {
   const [y, m, d] = (wo.date || todayIso()).split("-");
   const parts = [
+    fileSafe(wo.wonum).slice(0, 25),
     fileSafe(wo.customerName).slice(0, 50),
     fileSafe(wo.site.address).slice(0, 50),
     fileSafe(wo.po).slice(0, 25),
@@ -978,7 +979,7 @@ async function renderHistory() {
   list.innerHTML = records.map((r) => `
     <div class="hist-card" data-id="${r.id}">
       <div class="hist-main">
-        <div class="hist-title">${escapeHtml(r.wo.customerName || "Unknown customer")}${r.wo.returnTrip === "Yes" ? " <span class='badge local'>return trip needed</span>" : ""}</div>
+        <div class="hist-title">${r.wo.wonum ? `WO# ${escapeHtml(r.wo.wonum)} · ` : ""}${escapeHtml(r.wo.customerName || "Unknown customer")}${r.wo.returnTrip === "Yes" ? " <span class='badge local'>return trip needed</span>" : ""}</div>
         <div class="hist-sub">${escapeHtml(r.wo.date || "")} · ${escapeHtml(r.wo.tech || "no tech")} · saved ${escapeHtml(r.savedAt.slice(0, 16).replace("T", " "))}</div>
       </div>
       <button data-act="open">Open</button>
